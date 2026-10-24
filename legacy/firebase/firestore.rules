@@ -1,0 +1,12 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Notes are stored only under the signed-in user's UID.
+    // Documents contain AES ciphertext — never plaintext.
+    // These rules stop other users from reading/writing your docs,
+    // but they do NOT decrypt anything. Only the vault password can.
+    match /users/{userId}/notes/{noteId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "name": "SafeScribe",
+  "short_name": "SafeScribe",
+  "description": "Client-side encrypted notes synced with your Google account. The host cannot read your notes.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0f1419",
+  "theme_color": "#0f1419",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
