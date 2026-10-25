@@ -8,6 +8,7 @@ Thumbs.db
 # --- SafeScribe-DevOps additions: never commit secrets or build output ---
 .env
 .env.*
+!.env.example
 *.pem
 *.key
 *.crt

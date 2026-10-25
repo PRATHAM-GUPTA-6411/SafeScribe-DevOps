@@ -11,22 +11,28 @@ a client-side-encrypted notes app. University project for *Essentials in Cloud a
 | Phase | State |
 |---|---|
 | 0 Audit | Done: `docs/INITIAL_AUDIT.md` |
-| 1 Isolated clone | Done: app copied unchanged into `frontend/` |
-| 2 to 10 | Not started. Nothing is deployed. No AWS resources exist. |
+| 1 Isolated clone | Done |
+| 2 Application migration (API, DynamoDB code, Cognito sign-in) | Done and tested locally: `docs/TEST_RESULTS.md`. Not yet run against real Cognito or DynamoDB. |
+| 3 Docker | Files written and statically verified (`docs/DOCKER.md`). Real `docker build` not yet run. |
+| 4 to 10 | Not started. Nothing is deployed. No AWS resources exist. |
 
 ## Layout
 
 ```
-frontend/   the original SafeScribe app, byte-identical to the source for now (still uses Firebase)
-legacy/     Firebase-only artefacts kept for reference (firestore.rules)
-docs/       audit, provenance, original README
+frontend/   SafeScribe UI. auth.js (Cognito) and api.js (REST) replaced the Firebase code; CryptoJS is vendored
+backend/    Node.js API: token verification, DynamoDB access, metrics, tests
+docker/      development-only local DynamoDB emulator image (used by docker-compose.yml)
+legacy/     original Firebase artefacts, kept for reference only
+docs/       audit, API, test results, provenance, original README
 ```
 
-## Run the current (still Firebase-based) app locally
+## Run the tests
 
 ```bash
-cd frontend
-python3 -m http.server 8080      # then open http://localhost:8080
+cd backend && npm ci && npm test
+cd .. && node --test "frontend/test/**/*.test.js"
 ```
 
-Sign-in will use the original project's Firebase configuration until Phase 2 replaces it.
+Container: `docker build -t safescribe-api:local .` or `docker compose up --build` (see `docs/DOCKER.md`).
+
+Running the app for real needs a Cognito user pool and a DynamoDB table (created in Phase 5); see `docs/API.md`.

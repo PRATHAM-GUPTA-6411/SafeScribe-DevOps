@@ -1,0 +1,10 @@
+{
+  "name": "safescribe-local-dynamodb",
+  "version": "0.1.0",
+  "private": true,
+  "description": "DEVELOPMENT ONLY: in-memory DynamoDB emulator (dynalite) with the SafeScribe notes table pre-created",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "3.1156.0",
+    "dynalite": "4.0.0"
+  }
+}

@@ -54,6 +54,8 @@ Monitoring EC2: Prometheus (EC2 service discovery) + Grafana, not publicly expos
 
 **Phase 1 (done 24 Oct 2026):** isolated copy created, all 10 copied files verified byte-identical with `cmp`, original zip checksum unchanged before and after (`3215dc2a...09e5`), JS syntax check passed, static files served with HTTP 200. **Not tested:** real sign-in (needs a browser and the Firebase/Google flow).
 
+**Phase 2 (done 25 Oct 2026):** Node.js API, DynamoDB access code, Cognito (PKCE) sign-in, vendored CryptoJS and the service worker fix are implemented. 59 automated tests pass (see `TEST_RESULTS.md`). Two defects were found by testing and fixed: the original service worker caches API responses, and the UI returned to a stale unlock screen after session expiry. Not yet verified against real Cognito, DynamoDB or a real browser.
+
 ---
 
 ## 1. Existing architecture [Verified]
