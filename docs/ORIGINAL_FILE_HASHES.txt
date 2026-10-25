@@ -1,0 +1,13 @@
+# SHA-256 of every file in the ORIGINAL SafeScribe-main.zip, and where it lives in this repo.
+# repo path '-' means the file was intentionally modified for the DevOps edition.
+# Verified automatically by frontend/test/provenance.test.js
+bb8a588b257576a9e8528c82b8f52bf1710dd0212065b5bdafe6cdf543a70b37  icon.svg  frontend/icon.svg
+d2daf91ec963d9a116e2ec1bc2b85dbd3e0bd90dcdb925a33ad5df5f90dc4cbc  style.css  frontend/style.css
+563996537ff05622f125ce92a365794f2e297e62c720a1aea24daa82083e88f4  manifest.json  frontend/manifest.json
+dae6177e8e383af307804cfb95dd94d29b4bc8dec2642b477008b46b1c4af09a  firebase.js  legacy/firebase/firebase.js
+ce18da3052e0d1ca9a344c49cfe1b69a08fb1b4f9844dc77022bb3e54fefa0a2  firestore.rules  legacy/firebase/firestore.rules
+fc12af0cb2d40d46cb6a3c2fcd10241ac927f54b1287b76914bd8926b1033304  README.md  docs/ORIGINAL_SAFESCRIBE_README.md
+b885e7a12855bf1238a21df625ec795f32ce880691c302d1a949474b7796feb1  index.html  -
+c0ca8aac82d7e3156d38ff1741b47d44d6e4f1d560b40b425a0d6e7f9e396841  app.js  -
+c9e0598e253f9842c3399fab2bac557cb59ff567ddb5055705387523013623a8  service-worker.js  -
+2cd3247541134037e0f7197212dfd86906d80899faefd2113b28f62402e06fd3  .gitignore  -

@@ -3,7 +3,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
-const { FRONTEND, loadScript, vm } = require("./helpers");
+const { FRONTEND, vm } = require("./helpers");
 
 const ORIGIN = "https://app.example.com";
 const tick = () => new Promise((r) => setTimeout(r, 5));

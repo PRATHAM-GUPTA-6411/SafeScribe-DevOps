@@ -1,0 +1,15 @@
+title = "SafeScribe-DevOps secret scanning"
+
+[extend]
+useDefault = true
+
+# The ONLY exception: the Firebase *web* API key inside the original SafeScribe config.
+# It is public by design (it identifies the Firebase project; access is enforced by Firestore
+# rules and authorised domains, not by hiding the key), it is already in this repository's
+# history, and the file is kept only as a read-only legacy reference.
+# Limited to the two rules that match that one line and to two paths (the file is also pinned by SHA-256 in
+# frontend/test/provenance.test.js, so it cannot change unnoticed). Any other secret still fails the build.
+[[allowlists]]
+description = "Public Firebase web API key in the original firebase.js (legacy reference)"
+targetRules = ["gcp-api-key", "generic-api-key"]
+paths = ['''(^|/)(frontend|legacy/firebase)/firebase\.js$''']

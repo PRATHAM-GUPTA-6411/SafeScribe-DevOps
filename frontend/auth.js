@@ -112,7 +112,7 @@
     let data = {};
     try {
       data = await res.json();
-    } catch (e) {
+    } catch {
       /* non-JSON error body */
     }
     if (!res.ok || !data.access_token) {
@@ -137,7 +137,7 @@
     global.sessionStorage.removeItem(PKCE_KEY);
     try {
       return raw ? JSON.parse(raw) : null;
-    } catch (e) {
+    } catch {
       return null;
     }
   }
