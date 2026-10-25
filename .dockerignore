@@ -1,0 +1,16 @@
+# Keep the build context (and the image) to what the app needs.
+**/node_modules
+**/.git
+.github
+docs
+legacy
+infrastructure
+monitoring
+scripts
+docker
+backend/test
+frontend/test
+**/*.md
+**/.env
+**/.env.*
+*.zip

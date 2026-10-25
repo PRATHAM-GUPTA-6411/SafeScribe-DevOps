@@ -1,0 +1,4 @@
+# Keep line endings as LF everywhere (Windows checkouts would otherwise break shell scripts and Dockerfiles).
+* text=auto eol=lf
+*.png binary
+*.ico binary

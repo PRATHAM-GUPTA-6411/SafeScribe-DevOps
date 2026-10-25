@@ -1,0 +1,54 @@
+# Local development stack: the API (built from ./Dockerfile) + an in-memory DynamoDB emulator.
+#   cp .env.example .env     (fill in the three COGNITO_* values from your user pool)
+#   docker compose up --build
+# Then open http://localhost:8080. Register http://localhost:8080/ as a callback AND sign-out URL
+# on the Cognito app client (Cognito allows plain http only for localhost).
+name: safescribe
+
+services:
+  dynamodb:
+    build:
+      context: docker/dynalite
+    image: safescribe-local-dynamodb:dev
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('fs').accessSync('/tmp/ready')"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        APP_VERSION: ${APP_VERSION:-local}
+        GIT_SHA: ${GIT_SHA:-local}
+    image: safescribe-api:local
+    init: true
+    depends_on:
+      dynamodb:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+      - "127.0.0.1:9464:9464" # metrics: this machine only
+    environment:
+      COGNITO_USER_POOL_ID: ${COGNITO_USER_POOL_ID:?set COGNITO_USER_POOL_ID in .env}
+      COGNITO_CLIENT_ID: ${COGNITO_CLIENT_ID:?set COGNITO_CLIENT_ID in .env}
+      COGNITO_DOMAIN: ${COGNITO_DOMAIN:?set COGNITO_DOMAIN in .env}
+      NOTES_TABLE: SafeScribeNotes
+      AWS_REGION: us-east-1
+      DDB_ENDPOINT: http://dynamodb:8000
+      # Dummy values for the local emulator only. On AWS the EC2 instance role supplies credentials.
+      AWS_ACCESS_KEY_ID: local
+      AWS_SECRET_ACCESS_KEY: local
+      APP_VERSION: ${APP_VERSION:-local}
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped

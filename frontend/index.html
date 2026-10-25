@@ -26,7 +26,7 @@
           <p class="lede">Notes are encrypted on your device before they are saved. The people who built or host this app cannot read them.</p>
         </div>
         <div id="config-warning" class="banner warning" hidden>
-          Firebase is not configured yet. Open <code>firebase.js</code> and paste your project keys, then refresh. See README.md.
+          Sign-in is not configured. The server did not provide Cognito settings (<code>/config.js</code>). See the deployment documentation.
         </div>
         <button type="button" id="btn-google" class="btn primary">
           <span class="google-g" aria-hidden="true">G</span>
@@ -35,7 +35,7 @@
         <p id="login-error" class="error" role="alert" hidden></p>
         <ul class="privacy-points">
           <li>AES encryption in the browser (CryptoJS)</li>
-          <li>Firestore stores ciphertext only</li>
+          <li>The server stores ciphertext only</li>
           <li>Your vault password never leaves this device</li>
         </ul>
       </div>
@@ -54,7 +54,7 @@
           </div>
         </div>
         <h2 id="unlock-heading">Unlock your vault</h2>
-        <p id="unlock-lede" class="lede">This is not your Google password. It encrypts notes on this device and is never sent to Firebase.</p>
+        <p id="unlock-lede" class="lede">This is not your Google password. It encrypts notes on this device and is never sent to the server.</p>
         <form id="form-unlock">
           <label for="vault-password">Vault password</label>
           <div class="password-field">
@@ -126,12 +126,10 @@
     <div id="toast" class="toast" hidden role="status"></div>
 
     <!-- CryptoJS AES (client-side encryption) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
-    <!-- Firebase compat SDKs (Auth + Firestore) -->
-    <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
-    <script src="firebase.js"></script>
+    <script src="vendor/crypto-js.js"></script>
+    <script src="config.js"></script>
+    <script src="auth.js"></script>
+    <script src="api.js"></script>
     <script src="app.js"></script>
   </body>
 </html>

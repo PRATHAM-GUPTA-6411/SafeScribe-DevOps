@@ -4,13 +4,13 @@
  * ============================================================================
  * THE APP CREATOR CANNOT READ YOUR NOTES
  * ============================================================================
- * Encryption happens here, in your browser, *before* firebase.js writes to
- * Firestore. Decryption happens here, *after* you type the vault password.
+ * Encryption happens here, in your browser, *before* api.js sends it to
+ * the server. Decryption happens here, *after* you type the vault password.
  *
  * - Vault password: kept in a local variable only (not localStorage, not
- *   Firestore, not the Firebase Auth profile).
+ *   the database, not the sign-in token).
  * - Payload: JSON { title, body } → CryptoJS.AES.encrypt(...) → ciphertext
- *   string stored in Firestore.
+ *   string stored by the server.
  * - Opening the database or this repo's hosted files reveals ciphertext,
  *   never the note text.
  * ============================================================================
@@ -65,7 +65,7 @@
 
   function encryptNotePayload(title, body, password) {
     const plaintext = JSON.stringify({ title: title || "", body: body || "" });
-    // AES encryption — result is ciphertext, safe to store in Firestore
+    // AES encryption — result is ciphertext, safe to store on the server
     return CryptoJS.AES.encrypt(plaintext, password).toString();
   }
 
@@ -165,21 +165,20 @@
 
   async function loadNotes() {
     els.listStatus.textContent = "Loading encrypted notes…";
-    const snap = await listEncryptedNotes(currentUser.uid);
+    const items = await listEncryptedNotes();
     const decrypted = [];
     let failed = 0;
 
-    snap.forEach((doc) => {
-      const data = doc.data();
+    items.forEach((item) => {
       try {
-        const payload = decryptNotePayload(data.ciphertext, vaultPassword);
-        decrypted.push({ id: doc.id, ...payload });
+        const payload = decryptNotePayload(item.ciphertext, vaultPassword);
+        decrypted.push({ id: item.id, ...payload });
       } catch (err) {
         failed += 1;
       }
     });
 
-    if (snap.size > 0 && decrypted.length === 0) {
+    if (items.length > 0 && decrypted.length === 0) {
       throw new Error("Could not decrypt any notes. Check your vault password.");
     }
 
@@ -202,7 +201,7 @@
     // Encrypt in the browser, then upload ciphertext only.
     const ciphertext = encryptNotePayload(title, body, vaultPassword);
     els.saveStatus.textContent = "Saving encrypted note…";
-    await updateEncryptedNote(currentUser.uid, selectedId, ciphertext);
+    await updateEncryptedNote(selectedId, ciphertext);
     const note = notesCache.find((n) => n.id === selectedId);
     if (note) {
       note.title = title;
@@ -210,7 +209,7 @@
     }
     notesCache.sort((a, b) => (a.id === selectedId ? -1 : b.id === selectedId ? 1 : 0));
     renderList();
-    els.saveStatus.textContent = "Saved (ciphertext only in Firestore)";
+    els.saveStatus.textContent = "Saved (ciphertext only on the server)";
   }
 
   function queueSave() {
@@ -225,7 +224,7 @@
 
   async function createNote() {
     const ciphertext = encryptNotePayload("Untitled", "", vaultPassword);
-    const ref = await createEncryptedNote(currentUser.uid, ciphertext);
+    const ref = await createEncryptedNote(ciphertext);
     notesCache.unshift({ id: ref.id, title: "Untitled", body: "" });
     renderList();
     selectNote(ref.id);
@@ -236,7 +235,7 @@
   async function deleteCurrentNote() {
     if (!selectedId) return;
     if (!window.confirm("Delete this note? This cannot be undone.")) return;
-    await deleteEncryptedNote(currentUser.uid, selectedId);
+    await deleteEncryptedNote(selectedId);
     notesCache = notesCache.filter((n) => n.id !== selectedId);
     selectedId = notesCache[0] ? notesCache[0].id : null;
     renderList();
@@ -317,6 +316,8 @@
       await loadNotes();
     } catch (err) {
       vaultPassword = "";
+      // If the session ended meanwhile (expired token), the sign-in screen is already showing.
+      if (!currentUser) return;
       showScreen("unlock");
       showError(els.unlockError, err.message);
     }
@@ -345,7 +346,7 @@
 
   registerServiceWorker();
 
-  const configured = initFirebase();
+  const configured = initAuth();
   if (!configured) {
     els.configWarning.hidden = false;
     els.btnGoogle.disabled = true;
@@ -353,8 +354,12 @@
     return;
   }
 
-  onAuthReady((user) => {
-    if (user) handleSignedIn(user);
-    else handleSignedOut();
+  onAuthReady((user, error) => {
+    if (user) {
+      handleSignedIn(user);
+    } else {
+      handleSignedOut();
+      if (error) showError(els.loginError, error.message);
+    }
   });
 })();
