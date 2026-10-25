@@ -15,3 +15,8 @@ The Phase 1 commit contained byte-identical copies. Later changes are tracked in
 - Modified: `frontend/index.html`, `frontend/app.js`, `frontend/service-worker.js`
 - Added: `frontend/auth.js`, `frontend/api.js`, `frontend/vendor/` (CryptoJS 4.2.0 from npm), `backend/`
 - Moved: `frontend/firebase.js` to `legacy/firebase/firebase.js` (content unchanged)
+
+## Verification and an incident (25 Oct 2026)
+
+- `ORIGINAL_FILE_HASHES.txt` lists the SHA-256 of every file in the original zip. `frontend/test/provenance.test.js` checks that the six files meant to stay unchanged still match.
+- While preparing Phase 2, `frontend/icon.svg` in the working copy turned out to differ from the original: 8,372 bytes instead of 598, with an embedded `c2pa:manifest` (Content Credentials) metadata block. It was not written by any project command; the Phase 1 check had shown it identical. It is metadata only, so the icon looked the same, but it broke the "unchanged copy" claim. The original file was restored and the provenance test was added so this cannot pass unnoticed again.

@@ -30,7 +30,7 @@
       try {
         const data = await res.json();
         if (data && data.error) message = data.error;
-      } catch (e) {
+      } catch {
         /* keep the generic message */
       }
       throw new Error(message);

@@ -156,7 +156,7 @@ test("plain page load without a callback reports signed out, no error", async ()
 test("an expiring access token is refreshed silently and the refresh token is kept", async () => {
   let n = 0;
   const { sandbox, store, calls } = setup({
-    fetchImpl: async (url, init) => {
+    fetchImpl: async () => {
       n += 1;
       if (n === 1) return tokenResponse({ expires_in: 30 }); // already inside the 60 s refresh margin
       return {

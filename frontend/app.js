@@ -173,7 +173,7 @@
       try {
         const payload = decryptNotePayload(item.ciphertext, vaultPassword);
         decrypted.push({ id: item.id, ...payload });
-      } catch (err) {
+      } catch {
         failed += 1;
       }
     });

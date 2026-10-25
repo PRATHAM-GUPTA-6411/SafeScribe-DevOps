@@ -14,7 +14,8 @@ a client-side-encrypted notes app. University project for *Essentials in Cloud a
 | 1 Isolated clone | Done |
 | 2 Application migration (API, DynamoDB code, Cognito sign-in) | Done and tested locally: `docs/TEST_RESULTS.md`. Not yet run against real Cognito or DynamoDB. |
 | 3 Docker | Files written and statically verified (`docs/DOCKER.md`). Real `docker build` not yet run. |
-| 4 to 10 | Not started. Nothing is deployed. No AWS resources exist. |
+| 4 CI | Workflow written and its parts tested locally (`docs/WORKFLOW.md`). Not yet run on GitHub. |
+| 5 to 10 | Not started. Nothing is deployed. No AWS resources exist. |
 
 ## Layout
 
@@ -23,14 +24,17 @@ frontend/   SafeScribe UI. auth.js (Cognito) and api.js (REST) replaced the Fire
 backend/    Node.js API: token verification, DynamoDB access, metrics, tests
 docker/      development-only local DynamoDB emulator image (used by docker-compose.yml)
 legacy/     original Firebase artefacts, kept for reference only
-docs/       audit, API, test results, provenance, original README
+.github/    CI workflow and pull request template
+scripts/    CI smoke test for the Docker image
+docs/       audit, API, Docker, workflow, test results, provenance, original README
 ```
 
 ## Run the tests
 
 ```bash
-cd backend && npm ci && npm test
-cd .. && node --test "frontend/test/**/*.test.js"
+npm ci && npm ci --prefix backend
+npm run lint
+npm test
 ```
 
 Container: `docker build -t safescribe-api:local .` or `docker compose up --build` (see `docs/DOCKER.md`).
