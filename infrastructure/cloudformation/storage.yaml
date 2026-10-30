@@ -1,0 +1,71 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >-
+  SafeScribe-DevOps storage: the DynamoDB notes table (on-demand, so it costs almost nothing when idle)
+  and the ECR repository for the application image.
+
+Parameters:
+  TableName:
+    Type: String
+    Default: SafeScribeNotes
+    Description: Must match the NOTES_TABLE setting of the application.
+  RepositoryName:
+    Type: String
+    Default: safescribe-api
+    AllowedPattern: "^[a-z0-9]+([._/-][a-z0-9]+)*$"
+  ImagesToKeep:
+    Type: Number
+    Default: 10
+    MinValue: 1
+    MaxValue: 100
+    Description: Older images are deleted automatically to keep storage cost near zero.
+
+Resources:
+  NotesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Ref TableName
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - { AttributeName: userId, AttributeType: S }
+        - { AttributeName: noteId, AttributeType: S }
+      KeySchema:
+        - { AttributeName: userId, KeyType: HASH }
+        - { AttributeName: noteId, KeyType: RANGE }
+      DeletionProtectionEnabled: false # lab environment: the stack must be deletable. The table holds ciphertext only.
+
+  ApiRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Ref RepositoryName
+      ImageTagMutability: IMMUTABLE # a tag (the Git commit SHA) can never be silently re-pointed at different code
+      EmptyOnDelete: true # so deleting the stack works even when images exist
+      ImageScanningConfiguration:
+        ScanOnPush: true
+      EncryptionConfiguration:
+        EncryptionType: AES256
+      LifecyclePolicy:
+        LifecyclePolicyText: !Sub |
+          {
+            "rules": [
+              {
+                "rulePriority": 1,
+                "description": "Keep only the most recent images",
+                "selection": { "tagStatus": "any", "countType": "imageCountMoreThan", "countNumber": ${ImagesToKeep} },
+                "action": { "type": "expire" }
+              }
+            ]
+          }
+
+Outputs:
+  TableName:
+    Value: !Ref NotesTable
+    Export: { Name: !Sub "${AWS::StackName}-TableName" }
+  TableArn:
+    Value: !GetAtt NotesTable.Arn
+    Export: { Name: !Sub "${AWS::StackName}-TableArn" }
+  RepositoryName:
+    Value: !Ref ApiRepository
+    Export: { Name: !Sub "${AWS::StackName}-RepositoryName" }
+  RepositoryUri:
+    Value: !GetAtt ApiRepository.RepositoryUri
+    Export: { Name: !Sub "${AWS::StackName}-RepositoryUri" }

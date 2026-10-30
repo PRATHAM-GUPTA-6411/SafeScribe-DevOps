@@ -66,11 +66,28 @@ This is a simulation of the image, not the image. The real build is first exerci
 - **Secret scan found the Firebase web API key** in the legacy `firebase.js`. It is a public identifier by design, already in the repository history, and the file is pinned by SHA-256. A single narrow exception was added (two rules, two paths) rather than disabling the scan. The key could additionally be restricted by HTTP referrer in the Google Cloud console.
 - **Correction to my own earlier note:** gitleaks does auto-discover `.gitleaks.toml`; my first failed attempt was an incomplete rule list. The workflow still passes `--config` explicitly.
 
+## Phase 5: AWS foundation templates (executed 25 Oct 2026; NOTHING has been deployed to AWS)
+
+| Check | Result |
+|---|---|
+| `cfn-lint` 1.58.0 on `network.yaml`, `storage.yaml`, `auth.yaml` | clean |
+| Template tests (`npm run test:infra`, 15 tests) | pass: no IAM resources, no secrets or account ids in templates, no SSH anywhere, only the load balancer group open to the internet (80/443), app instances reachable only from the load balancer and the monitoring group, no NAT gateway or Elastic IP, table keys and name match the application code, ECR scan-on-push and immutable tags, Google-only sign-in with no self-registration, public PKCE client with no password flows, scopes and claims match `frontend/auth.js`, the Google secret is masked and referenced once |
+| Mutation check on the templates | six deliberate breaks (SSH opened, app port opened to the world, secret loses NoEcho, table name drift, password flow enabled, NAT gateway added), each caught by the matching test |
+| `scripts/aws/foundation.sh` against a fake AWS CLI (37 checks) | pass: validates before deploying, correct stack order and parameters, secret never printed (also when typed interactively), region guard, prefix rules, failed first deployments cleaned up, a failing stack stops the run, `status` warnings and "could not check" honesty, `destroy` needs `DELETE` and deletes in reverse order |
+| Mutation check on the script | eight deliberate breaks (secret printed, region guard removed, destroy order reversed, confirmation removed, "all clear" on failed checks, template validation skipped, failed-stack cleanup removed, prefix rules removed), each caught by the matching checks |
+| `shellcheck` 0.11.0 on all scripts, ESLint, `actionlint` | clean |
+
+### Defects found while testing (fixed)
+
+- **Executable bits.** The deploy-script test copied its fake `aws` command and relied on it being executable. It passed in the working folder but failed 15 of 37 checks from a clean unzip, because zip files and Windows Git do not keep executable bits (CI would have hit the same). The test now sets the bit itself and was re-run with every executable bit stripped. All scripts are invoked as `bash script.sh`, never directly.
+- **Test harness hang.** With the region guard deliberately removed, the script waited at a prompt and my mutation run timed out (and left the script mutated until I restored it). The harness now closes stdin and applies a time limit to every run.
+
 ## Not verified
 
 - Real Cognito: token verification against live Cognito keys, Google sign-in, the managed login redirect. Only a local key and a stand-in token endpoint were used.
 - Real DynamoDB (an emulator was used: no throttling, IAM or latency behaviour).
 - A real browser: jsdom does not enforce the Content-Security-Policy, run the service worker, or show the layout. A static scan found nothing the CSP should block (no inline handlers/styles, no external URLs, system fonts only), but this is unconfirmed in a browser.
-- A real `docker build` / `docker run` / `docker compose up`, the real HEALTHCHECK status and the image size (no Docker here; see `docs/DOCKER.md` for how to check on your machine).
-- **The CI workflow itself has never run on GitHub.** Not verified: the `actions/checkout` and `actions/setup-node` steps (cache behaviour), `docker compose config` and the Docker build and smoke test on a real runner (the smoke script was tested against a fake `docker`), and `npm ci` timing. The first pull request will be the first real run.
-- AWS deployment, ALB, Auto Scaling, Prometheus/Grafana, load testing: later phases.
+- A local `docker run` / `docker compose up` of the full stack with a real Cognito pool. The image itself was built and smoke-tested by CI on a real GitHub runner: the team reported all four Phase 4 jobs green on the first pull request (I did not see the logs, and the image size has not been recorded).
+- **The Phase 5 additions to CI have not run on GitHub yet:** template tests, deploy-script tests, shellcheck, and `cfn-lint` on real templates (each was run locally). The next pull request is their first real run.
+- **Everything on real AWS.** The templates were never deployed. Unknown until the first deploy: whether the Learner Lab permits every resource (Cognito domain and Google provider through CloudFormation, ECR with `EmptyOnDelete`, DynamoDB), whether the chosen hosted-login prefix is free, and whether Google sign-in completes through Cognito (the printed test address checks this).
+- ALB, Auto Scaling, Prometheus/Grafana, load testing: later phases.

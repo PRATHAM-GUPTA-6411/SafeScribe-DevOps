@@ -1,0 +1,123 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >-
+  SafeScribe-DevOps sign-in: a Cognito user pool with Google as the only way in, a hosted login domain,
+  and an app client for local development. The app client for the deployed load balancer is created later,
+  because its callback URL is the load balancer address.
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: safescribe
+    AllowedPattern: "^[a-z][a-z0-9-]{1,20}$"
+  DomainPrefix:
+    Type: String
+    AllowedPattern: "^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$"
+    ConstraintDescription: Lower-case letters, digits and hyphens. Must be unique in the region and must not contain "aws", "amazon" or "cognito".
+    Description: Prefix of the hosted login address, https://PREFIX.auth.REGION.amazoncognito.com
+  GoogleClientId:
+    Type: String
+    AllowedPattern: "^[A-Za-z0-9._-]+$"
+    ConstraintDescription: Paste the OAuth client ID from the Google Cloud console.
+    Description: Google OAuth client ID (not secret).
+  GoogleClientSecret:
+    Type: String
+    NoEcho: true
+    MinLength: 8
+    Description: Google OAuth client secret. Never commit it. It is masked here and stored only inside Cognito.
+  LocalCallbackUrl:
+    Type: String
+    Default: http://localhost:8080/
+    Description: Callback and sign-out URL of the local-development app client (Cognito allows plain http for localhost only).
+
+Resources:
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Sub "${ProjectName}-users"
+      UsernameAttributes:
+        - email
+      AutoVerifiedAttributes:
+        - email
+      MfaConfiguration: "OFF"
+      DeletionProtection: INACTIVE # lab environment: the stack must be deletable
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: true # nobody can self-register; accounts only come from Google sign-in
+
+  UserPoolDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      Domain: !Ref DomainPrefix
+      UserPoolId: !Ref UserPool
+
+  GoogleProvider:
+    Type: AWS::Cognito::UserPoolIdentityProvider
+    Properties:
+      UserPoolId: !Ref UserPool
+      ProviderName: Google
+      ProviderType: Google
+      ProviderDetails:
+        client_id: !Ref GoogleClientId
+        client_secret: !Ref GoogleClientSecret
+        authorize_scopes: openid email profile
+      AttributeMapping:
+        email: email
+        name: name
+        picture: picture
+        username: sub
+
+  LocalAppClient:
+    Type: AWS::Cognito::UserPoolClient
+    DependsOn: GoogleProvider
+    Properties:
+      ClientName: !Sub "${ProjectName}-local"
+      UserPoolId: !Ref UserPool
+      GenerateSecret: false # browser app: a secret could not be kept; PKCE protects the code exchange instead
+      AllowedOAuthFlowsUserPoolClient: true
+      AllowedOAuthFlows:
+        - code
+      AllowedOAuthScopes:
+        - openid
+        - email
+        - profile
+      CallbackURLs:
+        - !Ref LocalCallbackUrl
+      LogoutURLs:
+        - !Ref LocalCallbackUrl
+      SupportedIdentityProviders:
+        - Google
+      ExplicitAuthFlows:
+        - ALLOW_REFRESH_TOKEN_AUTH # no password flows exist
+      PreventUserExistenceErrors: ENABLED
+      EnableTokenRevocation: true
+      AccessTokenValidity: 60
+      IdTokenValidity: 60
+      RefreshTokenValidity: 12
+      TokenValidityUnits:
+        AccessToken: minutes
+        IdToken: minutes
+        RefreshToken: hours
+      ReadAttributes:
+        - email
+        - email_verified
+        - name
+        - picture
+      WriteAttributes:
+        - email
+        - name
+        - picture
+
+Outputs:
+  UserPoolId:
+    Value: !Ref UserPool
+    Export: { Name: !Sub "${AWS::StackName}-UserPoolId" }
+  UserPoolArn:
+    Value: !GetAtt UserPool.Arn
+    Export: { Name: !Sub "${AWS::StackName}-UserPoolArn" }
+  LocalAppClientId:
+    Value: !Ref LocalAppClient
+  HostedLoginDomain:
+    Value: !Sub "https://${DomainPrefix}.auth.${AWS::Region}.amazoncognito.com"
+    Export: { Name: !Sub "${AWS::StackName}-HostedLoginDomain" }
+  GoogleRedirectUri:
+    Description: Paste this into "Authorized redirect URIs" of the Google OAuth client.
+    Value: !Sub "https://${DomainPrefix}.auth.${AWS::Region}.amazoncognito.com/oauth2/idpresponse"

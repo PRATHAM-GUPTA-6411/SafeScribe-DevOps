@@ -11,10 +11,10 @@
 
 | Job | What it does |
 |---|---|
-| **Lint and test** | ESLint, frontend tests, backend tests (API, token checks, DynamoDB code, server boot, UI end-to-end), `npm audit` on production dependencies |
+| **Lint and test** | ESLint, frontend tests, infrastructure template tests, backend tests (API, token checks, DynamoDB code, server boot, UI end-to-end), `npm audit` on production dependencies |
 | **Docker build and smoke test** | `hadolint`, `docker compose config`, builds the API image with the commit SHA as its version, starts it read-only and non-root, and checks health, version, 401 without a token, `/metrics` not public, no tests or dev packages in the image, clean shutdown |
 | **Secret scan** | `gitleaks` over the whole Git history (`.gitleaks.toml` holds the one documented exception) |
-| **Validate workflows and CloudFormation** | `actionlint` on the workflows, `cfn-lint` on `infrastructure/**/*.yaml` (skips until templates exist) |
+| **Validate workflows and CloudFormation** | `actionlint` on the workflows, `shellcheck` on all scripts, the AWS deploy-script tests, `cfn-lint` on `infrastructure/**/*.yaml` |
 
 Properties of the pipeline: read-only token (`contents: read`), no secrets, no AWS access, third-party actions pinned to commit SHAs, downloaded tools pinned to a version and a SHA-256, one run per branch at a time.
 

@@ -10,12 +10,14 @@
     "lint": "eslint .",
     "test:backend": "npm test --prefix backend",
     "test:frontend": "node --test \"frontend/test/**/*.test.js\"",
-    "test": "npm run test:frontend && npm run test:backend"
+    "test": "npm run test:frontend && npm run test:infra && npm run test:backend",
+    "test:infra": "node --test \"infrastructure/test/**/*.test.js\""
   },
   "license": "UNLICENSED",
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "eslint": "^10.13.0",
-    "globals": "^17.13.0"
+    "globals": "^17.13.0",
+    "yaml": "^2.9.1"
   }
 }
