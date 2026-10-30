@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# Fake AWS CLI for testing scripts/aws/foundation.sh. Records every call and keeps stack state in $FAKE_STATE.
+: "${FAKE_STATE:?}"
+echo "$*" >> "$FAKE_STATE/calls.log"
+args="$*"
+stack_of() { # value after --stack-name
+  while [ $# -gt 0 ]; do [ "$1" = "--stack-name" ] && { echo "$2"; return; }; shift; done
+}
+case "$1 $2" in
+  "configure get") echo "${FAKE_REGION-us-east-1}"; exit 0 ;;
+  "sts get-caller-identity") echo "arn:aws:sts::000000000000:assumed-role/voclabs/tester"; exit 0 ;;
+  "cloudformation validate-template") [ -n "${FAKE_VALIDATE_FAIL:-}" ] && { echo "Template format error" >&2; exit 254; }; exit 0 ;;
+  "cloudformation describe-stacks")
+    stack="$(stack_of "$@")"
+    if [ -z "$stack" ]; then
+      for f in "$FAKE_STATE"/status_*; do [ -e "$f" ] && echo "$(basename "$f" | sed 's/^status_//') $(cat "$f")"; done
+      exit 0
+    fi
+    [ -e "$FAKE_STATE/status_$stack" ] || { echo "An error occurred (ValidationError): Stack with id $stack does not exist" >&2; exit 255; }
+    case "$args" in
+      *StackStatus*) cat "$FAKE_STATE/status_$stack" ;;
+      *UserPoolId*) echo "us-east-1_FakePool" ;;
+      *LocalAppClientId*) echo "fakeclientid123" ;;
+      *HostedLoginDomain*) echo "https://fake.auth.us-east-1.amazoncognito.com" ;;
+      *RepositoryUri*) echo "000000000000.dkr.ecr.us-east-1.amazonaws.com/safescribe-api" ;;
+      *TableName*) echo "SafeScribeNotes" ;;
+    esac
+    exit 0 ;;
+  "cloudformation deploy")
+    stack="$(stack_of "$@")"
+    if [ "$FAKE_DEPLOY_FAIL" = "$stack" ] 2>/dev/null; then echo "Failed to create/update the stack" >&2; echo ROLLBACK_COMPLETE > "$FAKE_STATE/status_$stack"; exit 255; fi
+    echo CREATE_COMPLETE > "$FAKE_STATE/status_$stack"; exit 0 ;;
+  "cloudformation delete-stack") rm -f "$FAKE_STATE/status_$(stack_of "$@")"; exit 0 ;;
+  "cloudformation wait") exit 0 ;;
+  "ec2 describe-instances") echo "${FAKE_INSTANCES:-0}"; exit 0 ;;
+  "ec2 describe-nat-gateways") echo "${FAKE_NATS:-0}"; exit 0 ;;
+  "ec2 describe-addresses") echo "${FAKE_EIPS:-0}"; exit 0 ;;
+  "elbv2 describe-load-balancers") [ -n "${FAKE_ELB_DENIED:-}" ] && { echo "AccessDenied" >&2; exit 254; }; echo "${FAKE_ALBS:-0}"; exit 0 ;;
+esac
+echo "fake-aws: unhandled call: $args" >&2
+exit 99

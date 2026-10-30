@@ -38,6 +38,8 @@ jobs:
         run: npm run lint
       - name: Frontend tests
         run: npm run test:frontend
+      - name: Infrastructure template tests (security and consistency)
+        run: npm run test:infra
       - name: Backend tests (API, auth, DynamoDB code, server boot, UI end-to-end)
         run: npm run test:backend
       - name: Dependency audit (production dependencies, high severity and above)
@@ -105,6 +107,16 @@ jobs:
           tar xzf actionlint.tgz actionlint
       - name: Lint GitHub Actions workflows
         run: ./actionlint -color
+      - name: Install shellcheck (pinned, checksum verified)
+        run: |
+          curl -fsSL -o shellcheck.tar.xz https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.linux.x86_64.tar.xz
+          echo "8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198  shellcheck.tar.xz" | sha256sum -c -
+          tar xJf shellcheck.tar.xz
+          echo "$PWD/shellcheck-v0.11.0" >> "$GITHUB_PATH"
+      - name: Shellcheck all scripts
+        run: shellcheck -x scripts/ci-smoke-test.sh scripts/aws/foundation.sh scripts/aws/test/foundation.test.sh scripts/aws/test/fake-aws
+      - name: Test the AWS deploy script (against a fake AWS CLI)
+        run: bash scripts/aws/test/foundation.test.sh
       - name: Validate CloudFormation templates (cfn-lint)
         run: |
           shopt -s globstar nullglob

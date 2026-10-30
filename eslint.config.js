@@ -19,7 +19,7 @@ module.exports = [
   { ignores: ["**/node_modules/**", "frontend/vendor/**", "legacy/**", "docs/**"] },
   js.configs.recommended,
   {
-    files: ["backend/**/*.js", "docker/**/*.js", "eslint.config.js", "frontend/test/**/*.js"],
+    files: ["backend/**/*.js", "docker/**/*.js", "infrastructure/**/*.js", "eslint.config.js", "frontend/test/**/*.js"],
     languageOptions: { sourceType: "commonjs", globals: globals.node },
   },
   {
